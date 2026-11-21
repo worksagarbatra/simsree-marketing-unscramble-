@@ -1,0 +1,145 @@
+/* Sagar's design system tokens */
+:root {
+  --signal: #E85002;
+  --ink: #16181A;
+  --field: #FAFAF7;
+  --on-signal: #0E0F10;
+  --line: #E4E0D6;
+  --card: #FFFFFF;
+  --muted: #6B6F73;
+  --tint: #FDEFE7;
+  --cell: #FBF9F4;
+  --danger: #B42318;
+  --head: 'Space Grotesk', system-ui, sans-serif;
+  --body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--body);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 96px; }
+
+/* Header */
+.hdr { border-bottom: 4px solid var(--ink); padding-bottom: 14px; margin-bottom: 14px; }
+.hdr h1 { font-family: var(--head); font-weight: 700; font-size: 1.6rem; margin: 0 0 4px; line-height: 1.15; }
+.hdr .sub { font-family: var(--mono); font-weight: 700; font-size: .78rem; color: var(--signal); }
+.ids { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.err { color: var(--danger); font-family: var(--mono); font-size: .82rem; margin: 10px 0 0; }
+
+/* Inputs: 16px minimum so iOS Safari doesn't zoom on focus */
+.inp {
+  width: 100%; padding: 11px 12px; border: 1.5px solid var(--ink); background: var(--card);
+  font-family: var(--mono); font-size: 16px; border-radius: 4px; color: var(--ink);
+  appearance: none; -webkit-appearance: none;
+}
+.inp:focus { outline: 2px solid var(--signal); outline-offset: 1px; }
+.inp:disabled { background: #F1EFE9; color: var(--muted); }
+.inp.up { text-transform: uppercase; }
+
+/* Tabs: single scrollable row on small screens */
+.tabs {
+  display: flex; gap: 6px; margin: 14px 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; padding-bottom: 2px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto; padding: 9px 14px; border: 1.5px solid var(--ink); background: var(--card); color: var(--ink);
+  font-family: var(--mono); font-size: .8rem; border-radius: 4px; cursor: pointer; white-space: nowrap;
+}
+.tab.on { background: var(--signal); border-color: var(--signal); color: var(--on-signal); font-weight: 700; }
+
+/* Sticky timer bar — in normal flow, so it never overlaps content */
+.timer {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--ink); color: var(--field);
+  padding: 10px 14px; border-radius: 6px; margin-bottom: 14px;
+  box-shadow: 0 4px 12px rgba(22, 24, 26, .12);
+}
+.timer .lbl { font-family: var(--mono); font-size: .78rem; letter-spacing: .02em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timer .clock {
+  font-family: var(--mono); font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums;
+  color: var(--signal); flex: 0 0 auto; line-height: 1;
+}
+.timer.low .clock { color: #FF6B5E; }
+.timer.done { background: var(--danger); }
+.timer.done .clock { color: var(--field); }
+.timer .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--signal); border-radius: 0 0 0 6px; transition: width 1s linear; }
+
+/* Cards */
+.card { background: var(--card); border: 1.5px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 14px; }
+.card h2 { font-family: var(--head); font-weight: 600; font-size: 1.15rem; margin: 0 0 10px; }
+.marks { font-family: var(--mono); font-size: .78rem; color: var(--signal); font-weight: 700; margin-left: 8px; white-space: nowrap; }
+.note { font-size: .84rem; color: var(--muted); font-style: italic; margin: 0 0 12px; }
+.locked-note { font-family: var(--mono); font-size: .82rem; color: var(--danger); background: #FDECEA; padding: 8px 10px; border-radius: 4px; margin: 0 0 14px; }
+.qb { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--line); }
+.qb:last-of-type { border-bottom: none; }
+.qt { font-weight: 500; margin-bottom: 10px; }
+
+.opts { display: grid; gap: 8px; }
+.opt {
+  display: flex; align-items: center; gap: 10px; padding: 12px; min-height: 48px;
+  border: 1.3px solid var(--line); border-radius: 6px; background: var(--cell); cursor: pointer; font-size: .95rem;
+}
+.opt input { accent-color: var(--signal); width: 18px; height: 18px; flex: 0 0 auto; margin: 0; }
+.opt.sel { border-color: var(--signal); background: var(--tint); font-weight: 600; }
+.opt.dis { cursor: not-allowed; opacity: .7; }
+
+.btn {
+  display: inline-block; padding: 12px 20px; border: 1.5px solid var(--signal); background: var(--signal);
+  color: var(--on-signal); font-family: var(--mono); font-weight: 700; font-size: .88rem;
+  border-radius: 6px; cursor: pointer; margin-top: 8px; min-height: 46px;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Crossword: cells scale down to fit 11 columns on a ~360px phone */
+.xw-wrap { overflow-x: auto; margin: 10px -4px 16px; padding: 4px; }
+.xw { border-collapse: collapse; margin: 0 auto; }
+.xw td { width: var(--cs); height: var(--cs); padding: 0; position: relative; }
+.xw td.a { border: 1.3px solid var(--ink); background: var(--cell); }
+.xw .n { position: absolute; top: 1px; left: 2px; font-size: 9px; line-height: 1; color: var(--muted); font-family: var(--mono); pointer-events: none; }
+.xw input {
+  width: 100%; height: 100%; border: none; background: transparent; text-align: center; padding: 0;
+  font-family: var(--mono); font-weight: 700; font-size: 16px; color: var(--ink); text-transform: uppercase; border-radius: 0;
+}
+.xw input:focus { outline: 2px solid var(--signal); outline-offset: -2px; background: #FFF4D6; }
+.xw input:disabled { color: var(--muted); }
+.wrap { --cs: 36px; }
+
+.clues { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.clues h3 { font-family: var(--mono); font-size: .82rem; border-bottom: 1.3px solid var(--ink); padding-bottom: 4px; margin: 0 0 8px; }
+.clues ol { list-style: none; padding: 0; margin: 0; font-size: .9rem; }
+.clues li { margin-bottom: 6px; }
+
+.scr { font-family: var(--mono); font-size: 1.35rem; letter-spacing: .22em; font-weight: 700; color: var(--signal); word-break: break-all; }
+.hint { color: var(--muted); font-size: .9rem; margin: 6px 0 10px; }
+.bonus { display: flex; gap: 10px; align-items: center; margin: 14px 0; flex-wrap: wrap; }
+.bonus .inp { width: 140px; border-color: var(--signal); }
+
+.score-lines { font-family: var(--mono); font-size: .92rem; line-height: 1.9; }
+.total { font-family: var(--head); font-size: 1.5rem; font-weight: 700; margin: 8px 0; }
+.total b { color: var(--signal); }
+
+ul.rules { padding-left: 20px; }
+ul.rules li { margin-bottom: 6px; }
+
+@media (max-width: 600px) {
+  .wrap { padding: 14px 12px 80px; --cs: min(34px, calc((100vw - 40px) / 11)); }
+  .hdr h1 { font-size: 1.35rem; }
+  .hdr .sub { font-size: .7rem; }
+  .ids { grid-template-columns: 1fr; gap: 8px; }
+  .card { padding: 16px 14px; }
+  .clues { grid-template-columns: 1fr; gap: 12px; }
+  .timer .clock { font-size: 1.2rem; }
+  .btn { width: 100%; text-align: center; }
+  .xw .n { font-size: 8px; }
+}

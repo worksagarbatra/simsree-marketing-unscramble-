@@ -1,84 +1,99 @@
 import { NextResponse } from "next/server";
-import { crossword } from "@/lib/examContent";
+import { crossword, quiz, treasure } from "@/lib/examContent";
 import { QUIZ_ANSWERS, CROSSWORD_ANSWERS, TREASURE_ANSWERS, GOLD_WORD, MARKS } from "@/lib/answerKey";
-import { upsertSubmission } from "@/lib/db";
+import { insertSubmission } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function norm(s: unknown) {
   return String(s ?? "").toUpperCase().replace(/[^A-Z]/g, "");
 }
 
+const MAX = {
+  quiz: QUIZ_ANSWERS.length * MARKS.quizEach,
+  xw: Object.keys(CROSSWORD_ANSWERS).length * MARKS.xwEach,
+  th: TREASURE_ANSWERS.length * MARKS.treasureEach,
+};
+
 export async function POST(req: Request) {
+  let body: any;
   try {
-    const body = await req.json();
-    const { name, email, roll, quizSelections, xwCells, treasureAnswers, goldAnswer } = body;
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
 
-    if (!name || !email) {
-      return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
-    }
+  const name = String(body?.name ?? "").trim().slice(0, 120);
+  const email = String(body?.email ?? "").trim().toLowerCase().slice(0, 160);
+  const roll = String(body?.roll ?? "").trim().slice(0, 60);
+  if (name.length < 2 || !EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: "A name and a valid email are required." }, { status: 400 });
+  }
 
-    // ---- Round 1: Quiz ----
-    let quizScore = 0;
-    const quizSel: number[] = Array.isArray(quizSelections) ? quizSelections : [];
-    QUIZ_ANSWERS.forEach((correctIdx, i) => {
-      if (quizSel[i] === correctIdx) quizScore += MARKS.quizEach;
-    });
-
-    // ---- Round 2: Crossword ----
-    // xwCells is {"r-c": "letter"} as typed by the student
-    let xwScore = 0;
-    const cells: Record<string, string> = xwCells || {};
-    const entries = [
-      ...crossword.across.map((e) => ({ ...e, dir: "A" as const })),
-      ...crossword.down.map((e) => ({ ...e, dir: "D" as const })),
-    ];
-    for (const e of entries) {
-      const dr = e.dir === "A" ? 0 : 1;
-      const dc = e.dir === "A" ? 1 : 0;
-      let word = "";
-      for (let k = 0; k < e.len; k++) {
-        const r = e.r + k * dr;
-        const c = e.c + k * dc;
-        word += norm(cells[`${r}-${c}`]);
+  // ---- Sanitise raw answers ----
+  const quizSel: number[] = quiz.map((q, i) => {
+    const v = Number(body?.quizSelections?.[i]);
+    return Number.isInteger(v) && v >= 0 && v < q.opts.length ? v : -1;
+  });
+  const cellsIn = body?.xwCells && typeof body.xwCells === "object" ? body.xwCells : {};
+  const xwCells: Record<string, string> = {};
+  for (let r = 0; r < crossword.rows; r++)
+    for (let c = 0; c < crossword.cols; c++)
+      if (crossword.cells[r][c]) {
+        const v = norm(cellsIn[`${r}-${c}`]).slice(0, 1);
+        if (v) xwCells[`${r}-${c}`] = v;
       }
-      const key = `${e.r}-${e.c}-${e.dir}`;
-      if (word === CROSSWORD_ANSWERS[key]) xwScore += MARKS.xwEach;
-    }
+  const tAns: string[] = treasure.map((_, i) => norm(body?.treasureAnswers?.[i]).slice(0, 20));
+  const gold = norm(body?.goldAnswer).slice(0, 12);
+  const timing: Record<string, number | null> = {};
+  for (const r of ["quiz", "xw", "th"]) {
+    const v = Number(body?.timing?.[r]);
+    timing[r] = Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), 3600) : null;
+  }
 
-    // ---- Round 3: Treasure hunt ----
-    let thScore = 0;
-    const tAns: string[] = Array.isArray(treasureAnswers) ? treasureAnswers : [];
-    TREASURE_ANSWERS.forEach((correct, i) => {
-      if (norm(tAns[i]) === correct) thScore += MARKS.treasureEach;
+  // ---- Grade ----
+  let quizScore = 0;
+  QUIZ_ANSWERS.forEach((correct, i) => { if (quizSel[i] === correct) quizScore += MARKS.quizEach; });
+
+  let xwScore = 0;
+  const entries = [
+    ...crossword.across.map((e) => ({ ...e, dir: "A" as const })),
+    ...crossword.down.map((e) => ({ ...e, dir: "D" as const })),
+  ];
+  const xwWords: Record<string, string> = {};
+  for (const e of entries) {
+    const dr = e.dir === "A" ? 0 : 1;
+    const dc = e.dir === "A" ? 1 : 0;
+    let word = "";
+    for (let k = 0; k < e.len; k++) word += xwCells[`${e.r + k * dr}-${e.c + k * dc}`] || "_";
+    const key = `${e.r}-${e.c}-${e.dir}`;
+    xwWords[`${e.n}${e.dir === "A" ? " Across" : " Down"}`] = word;
+    if (word === CROSSWORD_ANSWERS[key]) xwScore += MARKS.xwEach;
+  }
+
+  let thScore = 0;
+  TREASURE_ANSWERS.forEach((correct, i) => { if (tAns[i] === correct) thScore += MARKS.treasureEach; });
+  const bonus = gold === GOLD_WORD ? MARKS.bonus : 0;
+  const total = quizScore + xwScore + thScore;
+
+  try {
+    const { row, existed } = await insertSubmission({
+      name, email, roll,
+      quiz_score: quizScore, xw_score: xwScore, th_score: thScore, bonus, total,
+      raw_answers: { quiz: quizSel, crossword: xwWords, treasure: tAns, bonusWord: gold },
+      timing,
     });
-
-    // ---- Bonus: gold word ----
-    const bonus = norm(goldAnswer) === GOLD_WORD ? MARKS.bonus : 0;
-
-    const total = quizScore + xwScore + thScore; // bonus reported separately, out of 20
-
-    await upsertSubmission({
-      name: String(name).slice(0, 120),
-      email: String(email).slice(0, 160),
-      roll: roll ? String(roll).slice(0, 60) : "",
-      quiz_score: quizScore,
-      xw_score: xwScore,
-      th_score: thScore,
-      bonus,
-      total,
-    });
-
     return NextResponse.json({
-      quizScore,
-      quizMax: QUIZ_ANSWERS.length * MARKS.quizEach,
-      xwScore,
-      xwMax: entries.length * MARKS.xwEach,
-      thScore,
-      thMax: TREASURE_ANSWERS.length * MARKS.treasureEach,
-      bonus,
-      total,
+      quizScore: Number(row.quiz_score), quizMax: MAX.quiz,
+      xwScore: Number(row.xw_score), xwMax: MAX.xw,
+      thScore: Number(row.th_score), thMax: MAX.th,
+      bonus: Number(row.bonus), total: Number(row.total),
+      alreadySubmitted: existed,
     });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Could not grade submission." }, { status: 500 });
+    console.error("submit failed", err);
+    return NextResponse.json({ error: "Could not save your submission. Please tell the invigilator." }, { status: 500 });
   }
 }

@@ -1,6 +1,17 @@
-export const metadata = {
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
   title: "The Marketing Unscramble — Internal Exam",
   description: "SIMSREE Digital Marketing elective — internal assessment",
+  formatDetection: { telephone: false, email: false, address: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#16181A",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body style={{ margin: 0 }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
