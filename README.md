@@ -37,19 +37,20 @@ Submitting again with the same email overwrites their previous score
 
 ## Pulling results
 
-Visit:
+Visit `https://simsree-marketing-unscramble.vercel.app/api/results?key=YOUR_ADMIN_KEY`
+to download an Excel workbook with three tabs:
 
-```
-https://<your-deployment>.vercel.app/api/results?key=YOUR_ADMIN_KEY
-```
+- **Responses** — what each student submitted (quiz letters, crossword words, treasure answers, bonus word, seconds spent per round)
+- **Scores** — quiz, crossword, treasure, bonus, final /20 (as formulas) and percent
+- **Answer key** — for spot-checking
 
-This downloads a CSV with every student's name, email, roll, per-round
-scores, bonus and total — open it directly in Excel, or ask Claude Code
-to fetch it and build a formatted .xlsx:
+Add `&format=csv` for a scores-only CSV.
 
-```
-curl -s "https://<your-deployment>.vercel.app/api/results?key=YOUR_ADMIN_KEY" -o results.csv
-```
+## Exam rules built in
+
+- Timers: quiz 10 min, crossword 15 min, treasure hunt 15 min. Each starts the first time a round is opened and keeps running; the round locks at zero; the exam auto-submits when all three have run out.
+- Progress is saved in the browser, so a mobile reload doesn't lose answers.
+- First submission per email wins; a resubmit just shows the recorded score.
 
 ## Local development
 
